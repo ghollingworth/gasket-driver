@@ -594,17 +594,30 @@ gasket_get_ioctl_permissions_cb(struct gasket_dev *gasket_dev);
 const char *gasket_num_name_lookup(uint num,
 				   const struct gasket_num_name *table);
 
+static inline u64 _readq_relaxed(volatile void __iomem *addr)
+{
+	return (u64) readl(addr) + ((u64) readl(addr+4) << 32);
+}
+
+static inline void _writeq(u64 val, volatile void __iomem * addr)
+{
+	writel((u32) val, addr);
+	writel((u32) (val >> 32), addr+4);
+}
+
+#define _writeq_relaxed(v, a) _writeq(v, a);
+
 /* Handy inlines */
 static inline u64 gasket_dev_read_64(struct gasket_dev *gasket_dev, int bar,
 				       ulong location)
 {
-	return readq_relaxed(&gasket_dev->bar_data[bar].virt_base[location]);
+    return _readq_relaxed(&gasket_dev->bar_data[bar].virt_base[location]);
 }
 
 static inline void gasket_dev_write_64(struct gasket_dev *dev, u64 value,
 				       int bar, ulong location)
 {
-	writeq_relaxed(value, &dev->bar_data[bar].virt_base[location]);
+	_writeq_relaxed(value, &dev->bar_data[bar].virt_base[location]);
 }
 
 static inline void gasket_dev_write_32(struct gasket_dev *dev, u32 value,
